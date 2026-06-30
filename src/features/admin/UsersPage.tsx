@@ -11,7 +11,9 @@ export function UsersPage() {
     return (
       <div role="alert">
         <p>{t('common.error')}</p>
-        <button type="button" onClick={() => void refetch()}>{t('common.retry')}</button>
+        <button type="button" onClick={() => void refetch()}>
+          {t('common.retry')}
+        </button>
       </div>
     );
   if (!data || data.length === 0) return <p>{t('common.empty')}</p>;

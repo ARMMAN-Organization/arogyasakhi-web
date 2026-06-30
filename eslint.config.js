@@ -8,7 +8,9 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**'] },
+  // Build output and root config files (not TS source, not in any tsconfig —
+  // type-checked rules can't apply to them).
+  { ignores: ['dist/**', 'coverage/**', '*.config.js', '*.config.cjs', '*.config.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
@@ -35,6 +37,8 @@ export default tseslint.config(
         { selector: 'typeLike', format: ['PascalCase'] },
         { selector: 'function', format: ['camelCase', 'PascalCase'] },
         { selector: 'objectLiteralProperty', format: null },
+        // Vite env vars are UPPER_CASE by convention (e.g. VITE_API_BASE_URL).
+        { selector: 'typeProperty', format: ['camelCase', 'UPPER_CASE'] },
       ],
       'import/order': ['error', { groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'], 'newlines-between': 'always', alphabetize: { order: 'asc' } }],
       'no-console': ['warn', { allow: ['warn', 'error'] }],

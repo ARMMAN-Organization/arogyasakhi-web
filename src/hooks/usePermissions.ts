@@ -1,4 +1,5 @@
 import { useAppSelector } from './redux';
+
 import type { Role } from '@/store/authSlice';
 
 /** Reads the current user's roles for UX gating (not a security boundary). */

@@ -3,10 +3,10 @@ import { I18nextProvider } from 'react-i18next';
 import { Provider } from 'react-redux';
 import { describe, expect, it } from 'vitest';
 
+import { ReportsPage } from './ReportsPage';
+
 import i18n from '@/i18n';
 import { store } from '@/store/store';
-
-import { ReportsPage } from './ReportsPage';
 
 describe('ReportsPage', () => {
   it('shows the loading state first', () => {

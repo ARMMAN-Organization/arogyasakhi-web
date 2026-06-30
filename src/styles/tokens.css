@@ -11,11 +11,29 @@
   --status-success: #2e7d32;
   --status-error: #d32f2f;
   --status-warning: #fbc02d;
-  --g10: #f7f9fc; --g50: #e6e6e6; --g75: #b3b3b3; --g100: #999; --g200: #656565; --g400: #333; --g500: #000;
+  --g10: #f7f9fc;
+  --g50: #e6e6e6;
+  --g75: #b3b3b3;
+  --g100: #999;
+  --g200: #656565;
+  --g400: #333;
+  --g500: #000;
   --font-sans: 'Cabin', system-ui, sans-serif;
   --font-serif: 'Libre Baskerville', Georgia, serif;
-  --space-xs: 4px; --space-sm: 12px; --space-md: 16px; --space-lg: 20px; --space-xl: 24px;
-  --radius-sm: 8px; --radius-md: 16px;
+  --space-xs: 4px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --radius-sm: 8px;
+  --radius-md: 16px;
 }
-* { box-sizing: border-box; }
-body { margin: 0; font-family: var(--font-sans); color: var(--g400); background: var(--g10); }
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--g400);
+  background: var(--g10);
+}

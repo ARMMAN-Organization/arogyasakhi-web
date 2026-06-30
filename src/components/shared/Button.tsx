@@ -8,7 +8,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /** Primary action button following the style guide (lavender primary, outline secondary). */
-export function Button({ variant = 'primary', className, type = 'button', children, ...rest }: ButtonProps) {
+export function Button({
+  variant = 'primary',
+  className,
+  type = 'button',
+  children,
+  ...rest
+}: ButtonProps) {
   const classes = ['btn', `btn--${variant}`, className].filter(Boolean).join(' ');
   return (
     <button type={type} className={classes} {...rest}>

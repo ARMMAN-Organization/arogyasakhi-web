@@ -2,9 +2,9 @@ import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
 
-import { SUPPORTED_LANGUAGES } from '@/i18n';
 import { useAppDispatch } from '@/hooks/redux';
 import { usePermissions } from '@/hooks/usePermissions';
+import { SUPPORTED_LANGUAGES } from '@/i18n';
 import { logout } from '@/store/authSlice';
 
 import './AppLayout.css';
@@ -21,7 +21,9 @@ export function AppLayout() {
         <span className="shell__title">{t('app.title')}</span>
         <nav className="shell__nav">
           <NavLink to="/">{t('nav.dashboard')}</NavLink>
-          {hasAnyRole(['MANAGER', 'ANALYST']) && <NavLink to="/reports">{t('nav.reports')}</NavLink>}
+          {hasAnyRole(['MANAGER', 'ANALYST']) && (
+            <NavLink to="/reports">{t('nav.reports')}</NavLink>
+          )}
           {hasRole('ADMIN') && <NavLink to="/admin/users">{t('nav.admin')}</NavLink>}
         </nav>
         <div className="shell__actions">

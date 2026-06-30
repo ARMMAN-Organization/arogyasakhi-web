@@ -86,10 +86,26 @@ src/
 - Debounce search inputs. Keep bundle lean — import only what's used.
 
 ## 14. Testing
-- Vitest + React Testing Library. Test behaviour, not implementation.
+- Vitest + React Testing Library (`jsdom`). Test behaviour, not implementation.
 - Cover loading/error/empty/success and role-gated rendering.
+- Tests live beside the feature as `*.test.tsx`. Run `npm test` (CI) or
+  `npm run test:watch` (local).
+- **Current state:** only `features/reports` has a test. Add tests as you touch a
+  feature — every page should cover its loading/error/empty/success states.
 
-## 15. Git, CI/CD, docs
+## 15. Tooling & quality gates
+All configured at the repo root; run before pushing (husky + lint-staged also run
+them on commit):
+- **Lint** — `npm run lint` (ESLint 9 flat config, `eslint.config.js`): typed
+  rules (`recommendedTypeChecked`), React + hooks + jsx-a11y + import-order,
+  `consistent-type-imports`, `naming-convention`, `no-explicit-any`. Root config
+  files (`*.config.{js,cjs,ts}`) are ignored (not TS source).
+- **Format** — `npm run format` / Prettier (`prettier.config.js`). Note: some
+  existing files predate Prettier; run `format` to normalise as you touch them.
+- **Typecheck** — `npm run typecheck` (`tsc --noEmit`, strict).
+- **Test** — `npm test` (Vitest).
+
+## 16. Git, CI/CD, docs
 - Conventional Commits (commitlint), small PRs, min 1 approval, CI green.
 - CI runs lint + typecheck + test + build. Built as a static bundle served by nginx.
 - Each feature has a short note; document new shared components.
