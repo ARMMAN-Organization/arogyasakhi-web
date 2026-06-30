@@ -1,0 +1,6 @@
+{
+  "app": { "title": "Arogya Sakhi" },
+  "nav": { "dashboard": "Dashboard", "reports": "Reports", "admin": "Administration" },
+  "auth": { "signIn": "Sign in", "mobile": "Mobile number", "password": "Password" },
+  "common": { "loading": "Loading…", "error": "Something went wrong. Please try again.", "retry": "Retry", "empty": "No records found.", "logout": "Log out", "forbidden": "You do not have access to this page." }
+}

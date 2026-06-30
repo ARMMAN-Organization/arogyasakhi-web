@@ -1,0 +1,21 @@
+/* Design tokens from the Arogya Sakhi style guide. */
+:root {
+  color-scheme: light;
+  --color-primary: #7c4dff;
+  --color-background: #f1edf9;
+  --risk-high: #d32f2f;
+  --risk-moderate: #f57c00;
+  --risk-mild: #fbc02d;
+  --risk-none: #2e7d32;
+  --status-info: #1d79e5;
+  --status-success: #2e7d32;
+  --status-error: #d32f2f;
+  --status-warning: #fbc02d;
+  --g10: #f7f9fc; --g50: #e6e6e6; --g75: #b3b3b3; --g100: #999; --g200: #656565; --g400: #333; --g500: #000;
+  --font-sans: 'Cabin', system-ui, sans-serif;
+  --font-serif: 'Libre Baskerville', Georgia, serif;
+  --space-xs: 4px; --space-sm: 12px; --space-md: 16px; --space-lg: 20px; --space-xl: 24px;
+  --radius-sm: 8px; --radius-md: 16px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); color: var(--g400); background: var(--g10); }
