@@ -1,13 +1,13 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { ReportsPage } from './ReportsPage';
+import { UsersPage } from './UsersPage';
 
 import { renderWithProviders } from '@/test/renderWithProviders';
 
-describe('ReportsPage', () => {
+describe('UsersPage', () => {
   it('shows the loading state first', () => {
-    renderWithProviders(<ReportsPage />);
+    renderWithProviders(<UsersPage />);
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 });

@@ -5,12 +5,21 @@ import { authReducer } from './authSlice';
 
 import { api } from '@/services/api';
 
-export const store = configureStore({
-  reducer: { [api.reducerPath]: api.reducer, auth: authReducer },
-  middleware: (getDefault) => getDefault().concat(api.middleware),
-});
+/**
+ * Builds a fresh store instance. Use in tests to keep each case isolated;
+ * the app uses the shared `store` singleton exported below.
+ */
+export function makeStore() {
+  const store = configureStore({
+    reducer: { [api.reducerPath]: api.reducer, auth: authReducer },
+    middleware: (getDefault) => getDefault().concat(api.middleware),
+  });
+  setupListeners(store.dispatch);
+  return store;
+}
 
-setupListeners(store.dispatch);
+export const store = makeStore();
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+export type AppStore = ReturnType<typeof makeStore>;
+export type RootState = ReturnType<AppStore['getState']>;
+export type AppDispatch = AppStore['dispatch'];
