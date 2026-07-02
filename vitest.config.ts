@@ -7,9 +7,15 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@': resolve(__dirname, 'src') } },
   test: {
-    environment: 'jsdom',
+    environment: './src/test/jsdom-undici.ts',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Keep tests hermetic: config/env.ts fails fast when VITE_API_BASE_URL is
+    // unset, and .env is gitignored (absent in CI). Provide it here so any suite
+    // whose import graph reaches services/api.ts loads without a real .env file.
+    env: {
+      VITE_API_BASE_URL: 'http://localhost:3000/api/v1',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
