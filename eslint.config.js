@@ -10,7 +10,19 @@ import prettier from 'eslint-config-prettier';
 export default tseslint.config(
   // Build output and root config files (not TS source, not in any tsconfig —
   // type-checked rules can't apply to them).
-  { ignores: ['dist/**', 'coverage/**', '*.config.js', '*.config.cjs', '*.config.ts'] },
+  {
+    ignores: [
+      'dist/**',
+      'coverage/**',
+      '*.config.js',
+      '*.config.cjs',
+      '*.config.ts',
+      // tsc -b emits declaration files for config projects; not source.
+      '*.config.d.ts',
+      // Vite writes transient config files during build; never lint them.
+      '**/*.timestamp-*.mjs',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

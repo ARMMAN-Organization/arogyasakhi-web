@@ -6,3 +6,8 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
+*.timestamp-*.mjs
+# tsc -b build artifacts emitted from tsconfig.node.json
+vite.config.js
+vite.config.d.ts
+*.tsbuildinfo

@@ -13,4 +13,14 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
+/** Keep <html lang> in sync so assistive tech announces the correct language. */
+function syncDocumentLang(lng: string): void {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lng;
+  }
+}
+
+syncDocumentLang(i18n.language);
+i18n.on('languageChanged', syncDocumentLang);
+
 export default i18n;

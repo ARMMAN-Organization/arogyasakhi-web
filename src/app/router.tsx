@@ -3,8 +3,10 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import { LoginPage } from '@/features/auth/LoginPage';
 import { AppLayout } from '@/layouts/AppLayout';
+import { NotFound } from '@/routes/NotFound';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { RoleGuard } from '@/routes/RoleGuard';
+import { RouteErrorBoundary } from '@/routes/RouteErrorBoundary';
 
 // Lazy-load route pages to keep the initial bundle small.
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
@@ -12,9 +14,10 @@ const ReportsPage = lazy(() => import('@/features/reports/ReportsPage'));
 const UsersPage = lazy(() => import('@/features/admin/UsersPage'));
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
+  { path: '/login', element: <LoginPage />, errorElement: <RouteErrorBoundary /> },
   {
     element: <ProtectedRoute />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         path: '/',
@@ -29,6 +32,8 @@ export const router = createBrowserRouter([
             element: <RoleGuard allowedRoles={['ADMIN']} />,
             children: [{ path: 'admin/users', element: <UsersPage /> }],
           },
+          // Catch-all: unknown paths render inside the app shell.
+          { path: '*', element: <NotFound /> },
         ],
       },
     ],
