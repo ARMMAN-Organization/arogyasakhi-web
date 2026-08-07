@@ -1,0 +1,40 @@
+name: Redeploy Dev (manual)
+
+# Manual trigger for the dev deploy. Actions → "Redeploy Dev (manual)" → Run
+# workflow. All the logic lives in cd-dev.yml; this only supplies the trigger.
+#
+# What this is for:
+#   - redeploying after setting or fixing the VITE_API_BASE_URL secret, which is
+#     inlined at build time and so needs a rebuild to take effect
+#   - re-running a deploy that failed after the box had already moved on
+#
+# What it is NOT: a rollback. Re-running rebuilds and redeploys the same commit.
+# Rolling back is one symlink swap on the box:
+#   ls -1dt /var/www/armman/releases/*-*
+#   ln -sfn /var/www/armman/releases/<previous> /var/www/armman/app.incoming
+#   mv -Tf /var/www/armman/app.incoming /var/www/armman/app && systemctl reload nginx
+#
+# NOTE: the branch you select in the Run-workflow dialog is the branch that gets
+# built and deployed — dispatching from a feature branch ships that branch.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  redeploy:
+    uses: ./.github/workflows/cd-dev.yml
+    # Required for cd-dev.yml to read AWS_ROLE_ARN and VITE_API_BASE_URL.
+    secrets: inherit
+    # cd-dev.yml authenticates to AWS by exchanging a GitHub OIDC token for
+    # short-lived credentials, which needs `id-token: write`. A reusable workflow
+    # cannot grant itself more token permission than its caller, so its own
+    # `permissions` block is capped by this one — drop this and manual redeploys
+    # fail at role assumption while push deploys keep working, which is an
+    # awkward asymmetry to debug.
+    #
+    # `contents: read` is deliberate: the build runs on the box, so nothing here
+    # ever writes to the repo. Granting write would be capping cd-dev.yml at more
+    # privilege than it asks for.
+    permissions:
+      contents: read
+      id-token: write

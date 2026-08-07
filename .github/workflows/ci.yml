@@ -2,7 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # develop is the deploy branch (see cd-dev.yml), so a direct push there ships
+    # to the dev box. PRs into develop are already covered by the unfiltered
+    # `pull_request` trigger below; this adds the direct-push case.
+    #
+    # NOTE: this runs ALONGSIDE the deploy, it does not gate it — a lint or test
+    # failure goes red while cd-dev.yml deploys anyway. To make it a real gate,
+    # add `workflow_call:` here and give cd-dev.yml a `verify` job that `uses`
+    # this workflow, with `deploy` declaring `needs: verify`.
+    branches: [main, develop]
   pull_request:
 
 jobs:
