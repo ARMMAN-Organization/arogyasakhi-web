@@ -1,0 +1,36 @@
+.stat-tile {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+  min-height: var(--stat-tile-min-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-xs);
+  color: var(--surface);
+}
+.stat-tile__value {
+  font-family: var(--font-sans);
+  font-size: var(--text-3xl);
+  font-weight: 700;
+}
+.stat-tile__label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--overlay-light-strong);
+}
+.stat-tile--sponsor {
+  background: var(--chart-1);
+}
+.stat-tile--project {
+  background: var(--chart-2);
+}
+.stat-tile--sakhi {
+  background: var(--chart-3);
+}
+.stat-tile--village {
+  background: var(--chart-4);
+}
+.stat-tile--beneficiary {
+  background: var(--chart-5);
+}

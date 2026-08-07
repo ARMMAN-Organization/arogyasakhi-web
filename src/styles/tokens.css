@@ -27,6 +27,77 @@
   --space-xl: 24px;
   --radius-sm: 8px;
   --radius-md: 16px;
+  --chart-1: #d32f2f;
+  --chart-2: #1d79e5;
+  --chart-3: #2e7d32;
+  --chart-4: #fbc02d;
+  --chart-5: #7c4dff;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px -12px rgba(0, 0, 0, 0.12);
+  --space-2xl: 32px;
+  --sidebar-bg: #211b2e;
+  --sidebar-ink: #d9d4e6;
+  --sidebar-muted: #8f88a6;
+  --sidebar-active-bg: #34294f;
+  --sidebar-active-ink: #ffffff;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-error: #fdecea;
+
+  /* Overlays (light-on-dark and dark-on-light, used sparingly for hover/border on tinted surfaces) */
+  --overlay-light-weak: rgba(255, 255, 255, 0.06);
+  --overlay-light-medium: rgba(255, 255, 255, 0.08);
+  --overlay-light-strong: rgba(255, 255, 255, 0.92);
+  --overlay-dark-weak: rgba(0, 0, 0, 0.08);
+  --overlay-dark-medium: rgba(0, 0, 0, 0.12);
+
+  /* Color-primary hover state (darkened lavender) */
+  --color-primary-hover: #6a3de0;
+
+  /* Font-size scale */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-lg: 15px;
+  --text-xl: 16px;
+  --text-2xl: 22px;
+  --text-3xl: 26px;
+
+  /* Component sizing */
+  --control-height-sm: 32px;
+  --control-height-md: 36px;
+  --icon-size-sm: 18px;
+  --icon-size-xs: 17px;
+  --logo-size-topbar: 56px;
+  --logo-size-login: 140px;
+  --sidebar-width: 248px;
+  --legend-dot-size: 9px;
+  --legend-track-height: 6px;
+  --password-toggle-size: 28px;
+  --password-toggle-offset: 40px;
+  --password-toggle-inset: 8px;
+
+  /* Login card */
+  --login-card-max-width: 400px;
+  --login-card-padding: 40px;
+  --login-card-gap: 28px;
+  --login-heading-gap: 6px;
+  --login-input-padding-block: 11px;
+  --login-input-padding-inline: 14px;
+  --shadow-login-card: 0 8px 32px var(--overlay-dark-weak);
+
+  /* Focus outline offsets */
+  --outline-offset-sm: 1px;
+  --outline-offset-md: 2px;
+  --outline-width-md: 2px;
+
+  --stat-tile-min-height: 96px;
+
+  /* Border width (kept as a token for consistency even though 1px rarely varies) */
+  --border-width-sm: 1px;
+
+  /* Visually-hidden (screen-reader-only) technique constant */
+  --visually-hidden-size: 1px;
 }
 * {
   box-sizing: border-box;

@@ -12,7 +12,14 @@ import { makeStore } from '@/store/store';
 
 function renderWithRoles(roles: Role[]) {
   const store = makeStore();
-  store.dispatch(setCredentials({ token: 't', user: { id: 'u1', name: 'A', roles } }));
+  store.dispatch(
+    setCredentials({
+      token: 't',
+      refreshToken: 'rt',
+      expiresIn: 900,
+      user: { roles, projectId: null, geographyUnitId: null },
+    }),
+  );
   return render(
     <Provider store={store}>
       <I18nextProvider i18n={i18n}>

@@ -11,3 +11,6 @@ coverage/
 vite.config.js
 vite.config.d.ts
 *.tsbuildinfo
+
+# Local-only reference documents (HLD, DB design, SRS) — not project source
+docs/reference/

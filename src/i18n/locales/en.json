@@ -1,12 +1,20 @@
 {
   "app": { "title": "Arogya Sakhi" },
   "nav": { "dashboard": "Dashboard", "reports": "Reports", "admin": "Administration" },
+  "admin": {
+    "comingSoonTitle": "Coming soon",
+    "comingSoonBody": "User administration is under construction and will be available in a future release."
+  },
   "auth": {
     "signIn": "Sign in",
-    "mobile": "Mobile number",
+    "welcomeBack": "Welcome back",
+    "signInSubtitle": "Sign in to manage your program",
+    "username": "Username",
     "password": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "errors": {
-      "mobileInvalid": "Enter a valid 10-digit mobile number.",
+      "usernameRequired": "Username is required.",
       "passwordRequired": "Password is required."
     }
   },
@@ -18,9 +26,49 @@
     "retry": "Retry",
     "empty": "No records found.",
     "logout": "Log out",
+    "toggleMenu": "Toggle navigation menu",
     "forbidden": "You do not have access to this page.",
     "notFoundTitle": "Page not found",
     "notFoundBody": "The page you're looking for doesn't exist or has moved.",
     "backHome": "Back to dashboard"
+  },
+  "dashboard": {
+    "filters": {
+      "title": "Dashboard filters",
+      "sponsor": "Sponsor",
+      "allSponsors": "All sponsors",
+      "project": "Project",
+      "allProjects": "All projects",
+      "duration": "Select duration",
+      "allDurations": "All time",
+      "state": "State",
+      "allStates": "All states",
+      "district": "District",
+      "allDistricts": "All districts",
+      "block": "Block",
+      "allBlocks": "All blocks",
+      "phc": "PHC",
+      "allPhcs": "All PHCs",
+      "subcentre": "Subcentre",
+      "allSubcentres": "All subcentres",
+      "village": "Village",
+      "allVillages": "All villages"
+    },
+    "stats": {
+      "sponsors": "Sponsors",
+      "projects": "Project",
+      "sakhis": "Arogya Sakhis",
+      "villages": "Villages",
+      "beneficiaries": "Registered Beneficiaries"
+    },
+    "chart": {
+      "title": "Registrations over time",
+      "subtitle": "Last 6 months",
+      "registrations": "Registrations"
+    },
+    "districts": {
+      "title": "Sakhis by district",
+      "subtitle": "Top districts"
+    }
   }
 }

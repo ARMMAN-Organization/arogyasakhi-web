@@ -12,7 +12,14 @@ import { makeStore } from '@/store/store';
 
 function renderLayout(roles: Role[]) {
   const store = makeStore();
-  store.dispatch(setCredentials({ token: 't', user: { id: 'u1', name: 'A', roles } }));
+  store.dispatch(
+    setCredentials({
+      token: 't',
+      refreshToken: 'rt',
+      expiresIn: 900,
+      user: { roles, projectId: null, geographyUnitId: null },
+    }),
+  );
   const result = render(
     <Provider store={store}>
       <I18nextProvider i18n={i18n}>
@@ -53,5 +60,21 @@ describe('AppLayout', () => {
     const { store } = renderLayout(['ADMIN']);
     fireEvent.click(screen.getByRole('button', { name: /log out/i }));
     expect(store.getState().auth.token).toBeNull();
+  });
+
+  it('marks the Dashboard link as active on the index route', () => {
+    renderLayout(['MANAGER']);
+    expect(screen.getByText('Dashboard')).toHaveClass('active');
+    expect(screen.getByText('Reports')).not.toHaveClass('active');
+  });
+
+  it('has an accessible sidebar toggle button', () => {
+    renderLayout(['MANAGER']);
+    expect(screen.getByRole('button', { name: 'Toggle navigation menu' })).toBeInTheDocument();
+  });
+
+  it('renders outlet content inside the shell content area', () => {
+    renderLayout(['MANAGER']);
+    expect(document.querySelector('.shell__content')).toBeInTheDocument();
   });
 });
