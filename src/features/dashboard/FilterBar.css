@@ -1,0 +1,24 @@
+.filter-bar {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+}
+.filter-bar__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md) var(--space-lg);
+}
+.filter-bar__row--secondary {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: var(--border-width-sm) solid var(--g50);
+}
+
+@media (max-width: 900px) {
+  .filter-bar__row,
+  .filter-bar__row--secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

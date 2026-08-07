@@ -1,0 +1,24 @@
+.language-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--g200);
+}
+.language-switcher__icon {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+  flex-shrink: 0;
+}
+.language-switcher .select-field {
+  gap: 0;
+}
+.language-switcher .select-field__control {
+  height: var(--control-height-sm);
+  border: var(--border-width-sm) solid transparent;
+  background-color: transparent;
+  padding-right: var(--space-xl);
+  font-weight: 600;
+}
+.language-switcher .select-field__control:hover {
+  background-color: var(--g10);
+}

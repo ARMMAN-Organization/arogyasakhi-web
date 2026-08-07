@@ -25,14 +25,7 @@ describe('LoginPage validation', () => {
   it('shows validation errors when submitting an empty form', async () => {
     renderLogin();
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-    expect(await screen.findByText('Enter a valid 10-digit mobile number.')).toBeInTheDocument();
+    expect(await screen.findByText('Username is required.')).toBeInTheDocument();
     expect(await screen.findByText('Password is required.')).toBeInTheDocument();
-  });
-
-  it('rejects a non-numeric mobile number', async () => {
-    renderLogin();
-    fireEvent.input(screen.getByRole('textbox'), { target: { value: 'abc' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-    expect(await screen.findByText('Enter a valid 10-digit mobile number.')).toBeInTheDocument();
   });
 });

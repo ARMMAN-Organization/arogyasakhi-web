@@ -1,0 +1,108 @@
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  background: linear-gradient(160deg, var(--color-background) 0%, var(--surface) 60%);
+}
+
+.login-card {
+  width: 100%;
+  max-width: var(--login-card-max-width);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-login-card);
+  padding: var(--login-card-padding);
+  display: grid;
+  gap: var(--login-card-gap);
+}
+
+.login-card__logo {
+  display: flex;
+  justify-content: center;
+}
+
+.login-card__logo img {
+  width: var(--logo-size-login);
+  height: auto;
+}
+
+.login-card__heading {
+  text-align: center;
+  display: grid;
+  gap: var(--login-heading-gap);
+}
+
+.login-card__heading h1 {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  font-family: var(--font-sans);
+  color: var(--g400);
+}
+
+.login-card__heading p {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--g200);
+}
+
+.login-form {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.login-field {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.login-field label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--g400);
+}
+
+.login-field input {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  line-height: 1.4;
+  padding: var(--login-input-padding-block) var(--login-input-padding-inline);
+  border: var(--border-width-sm) solid var(--g75);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--g400);
+  transition: border-color 0.15s ease;
+}
+
+.login-field input:focus-visible {
+  outline: var(--outline-width-md) solid var(--color-primary);
+  outline-offset: var(--outline-offset-sm);
+  border-color: var(--color-primary);
+}
+
+.login-field input[aria-invalid='true'] {
+  border-color: var(--status-error);
+}
+
+.login-field__error {
+  font-size: var(--text-sm);
+  color: var(--status-error);
+}
+
+.login-form__error {
+  margin: 0;
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--surface-error);
+  color: var(--status-error);
+  font-size: var(--text-md);
+  text-align: center;
+}
+
+.login-form .btn {
+  width: 100%;
+  margin-top: var(--space-xs);
+}

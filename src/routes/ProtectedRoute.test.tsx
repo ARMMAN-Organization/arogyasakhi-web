@@ -31,7 +31,13 @@ describe('ProtectedRoute', () => {
 
   it('renders the protected content when authenticated', () => {
     const store = makeStore();
-    store.dispatch(setCredentials({ token: 't', user: { id: 'u1', name: 'A', roles: [] } }));
+    store.dispatch(
+      setCredentials({
+        token: 't',
+        refreshToken: 'rt',
+        user: { roles: [], projectId: null, geographyUnitId: null },
+      }),
+    );
     renderAt('/', store);
     expect(screen.getByText('protected content')).toBeInTheDocument();
   });

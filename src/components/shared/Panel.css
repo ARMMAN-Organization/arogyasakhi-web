@@ -1,0 +1,25 @@
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+}
+.panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.panel__title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--g400);
+  margin: 0;
+}
+.panel__subtitle {
+  font-size: var(--text-xs);
+  color: var(--g200);
+  font-weight: 600;
+}

@@ -1,0 +1,38 @@
+.legend-bar + .legend-bar {
+  margin-top: var(--space-md);
+}
+.legend-bar__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.legend-bar__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--g400);
+}
+.legend-bar__dot {
+  width: var(--legend-dot-size);
+  height: var(--legend-dot-size);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.legend-bar__value {
+  font-weight: 700;
+  color: var(--g400);
+  font-size: var(--text-sm);
+}
+.legend-bar__track {
+  height: var(--legend-track-height);
+  border-radius: var(--radius-sm);
+  background: var(--g50);
+  margin-top: var(--space-xs);
+  overflow: hidden;
+}
+.legend-bar__fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+}

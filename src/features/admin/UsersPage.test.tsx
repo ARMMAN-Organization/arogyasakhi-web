@@ -6,8 +6,13 @@ import { UsersPage } from './UsersPage';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 describe('UsersPage', () => {
-  it('shows the loading state first', () => {
+  it('shows a coming-soon message', () => {
     renderWithProviders(<UsersPage />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByText('Coming soon')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'User administration is under construction and will be available in a future release.',
+      ),
+    ).toBeInTheDocument();
   });
 });

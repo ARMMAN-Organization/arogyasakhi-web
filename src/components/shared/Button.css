@@ -1,15 +1,15 @@
 .btn {
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 16px;
-  padding: 12px 20px;
+  font-size: var(--text-xl);
+  padding: var(--space-sm) var(--space-lg);
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  border: var(--border-width-sm) solid transparent;
   cursor: pointer;
 }
 .btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--outline-width-md) solid var(--color-primary);
+  outline-offset: var(--outline-offset-md);
 }
 .btn:disabled {
   opacity: 0.5;
@@ -17,10 +17,10 @@
 }
 .btn--primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--surface);
 }
 .btn--primary:hover:not(:disabled) {
-  background: #6a3de0;
+  background: var(--color-primary-hover);
 }
 .btn--secondary {
   background: transparent;

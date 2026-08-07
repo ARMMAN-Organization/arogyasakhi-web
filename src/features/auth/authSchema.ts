@@ -6,11 +6,7 @@ import { z } from 'zod';
  * is enforced when a password is set, not at sign-in.
  */
 export const loginSchema = z.object({
-  // Indian mobile numbers are 10 digits. Mirror the backend rule if it differs.
-  mobile: z
-    .string()
-    .trim()
-    .regex(/^\d{10}$/, 'auth.errors.mobileInvalid'),
+  username: z.string().trim().min(1, 'auth.errors.usernameRequired'),
   password: z.string().min(1, 'auth.errors.passwordRequired'),
 });
 
