@@ -14,6 +14,7 @@ function wrapperWithRoles(roles: ('MANAGER' | 'ADMIN' | 'ANALYST')[]) {
     setCredentials({
       token: 't',
       refreshToken: 'rt',
+      expiresIn: 900,
       user: { roles, projectId: null, geographyUnitId: null },
     }),
   );

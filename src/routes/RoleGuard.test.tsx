@@ -16,6 +16,7 @@ function renderWithRoles(roles: Role[]) {
     setCredentials({
       token: 't',
       refreshToken: 'rt',
+      expiresIn: 900,
       user: { roles, projectId: null, geographyUnitId: null },
     }),
   );

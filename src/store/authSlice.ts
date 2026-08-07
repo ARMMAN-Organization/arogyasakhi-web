@@ -24,10 +24,17 @@ interface AuthState {
    * against that real backend contract.
    */
   refreshToken: string | null;
+  /** Seconds the access token is valid for, as returned by login/refresh. */
+  expiresIn: number | null;
   user: AuthUser | null;
 }
 
-const initialState: AuthState = { token: null, refreshToken: null, user: null };
+const initialState: AuthState = {
+  token: null,
+  refreshToken: null,
+  expiresIn: null,
+  user: null,
+};
 
 const authSlice = createSlice({
   name: 'auth',
@@ -35,10 +42,16 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ token: string; refreshToken: string; user: AuthUser }>,
+      action: PayloadAction<{
+        token: string;
+        refreshToken: string;
+        expiresIn: number;
+        user: AuthUser;
+      }>,
     ) => {
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
+      state.expiresIn = action.payload.expiresIn;
       // Merge onto any existing profile fields (id/username/displayName/projectName
       // from GET /me) so a token refresh never wipes them — only login and refresh
       // carry roles/projectId/geographyUnitId; only /me carries the rest.
@@ -53,6 +66,7 @@ const authSlice = createSlice({
     logout: (state) => {
       state.token = null;
       state.refreshToken = null;
+      state.expiresIn = null;
       state.user = null;
     },
   },
