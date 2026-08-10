@@ -60,10 +60,6 @@ BUILD_MIN_AVAIL_MB=${BUILD_MIN_AVAIL_MB:-1536}
 NODE_HEAP_MB=${NODE_HEAP_MB:-1024}
 RELEASES="$(dirname "$WEB_ROOT")/releases"
 KEEP_RELEASES=${KEEP_RELEASES:-5}
-# Served locally, so it bypasses any TLS terminator in front. /BUILD_INFO rather
-# than /: index.html is byte-identical across builds often enough that a 200 on it
-# proves only that nginx is up, not that it is serving THIS release.
-HEALTH_URL=${HEALTH_URL:-http://127.0.0.1/BUILD_INFO}
 
 mode=${1:?usage: deploy-dev.sh <build|publish>}
 
@@ -267,9 +263,6 @@ EOF
     find "$release" -type d -exec chmod 755 {} +
     find "$release" -type f -exec chmod 644 {} +
 
-    previous=""
-    [ -L "$WEB_ROOT" ] && previous=$(readlink -f "$WEB_ROOT" || true)
-
     # `ln -sfn` is unlink-then-symlink, so it has a window where the path does
     # not exist. Creating a temp link and renaming over it is a single rename(2).
     mkdir -p "$(dirname "$WEB_ROOT")"
@@ -288,38 +281,35 @@ EOF
     # also fronts the API gateway. Set DEPLOY_NGINX_ACTION=restart to override.
     systemctl "${DEPLOY_NGINX_ACTION:-reload}" nginx >>"$LOG" 2>&1
 
-    # A reload exiting 0 only means nginx accepted the signal. Confirm it is
-    # actually serving THIS build before calling the deploy done.
-    ok=0
-    for _ in $(seq 1 10); do
-      if curl -fsS "$HEALTH_URL" 2>/dev/null | grep -qx "sha=$SOURCE_SHA"; then
-        ok=1
-        break
-      fi
-      sleep 2
-    done
+    # NO POST-DEPLOY VERIFICATION — REMOVED DELIBERATELY, NOT MISSING.
+    #
+    # This used to poll http://127.0.0.1/BUILD_INFO for up to 20s, confirm the
+    # reply was `sha=$SOURCE_SHA`, and on failure swap the symlink back to the
+    # previous release and exit 1 (emitting NOT_SERVING / ROLLED_BACK= for the
+    # workflow to report). Removed on request.
+    #
+    # What that costs: a reload exiting 0 only means nginx accepted the signal.
+    # Nothing now confirms a request actually reaches this build, and nothing
+    # rolls back on its own. A misrouted server block, a wrong `root`, or a
+    # release directory nginx cannot read all report success.
+    #
+    # `nginx -t` above is kept — it is a config syntax check, not a serving
+    # probe, and it is what stops a broken reload taking the site down.
+    #
+    # Verify by hand after a deploy that matters. dist/BUILD_INFO is still
+    # written by the build phase and the `location = /BUILD_INFO` block in
+    # deploy/nginx/arogyasakhi-web.conf still serves it to localhost:
+    #
+    #   curl -s http://127.0.0.1/BUILD_INFO   # expect sha=<the sha deployed>
+    #
+    # /BUILD_INFO rather than /: index.html is byte-identical across builds often
+    # enough that a 200 on it proves only that nginx is up, not that it is
+    # serving THIS release.
 
-    if [ "$ok" -ne 1 ]; then
-      # Roll back rather than leave the box serving something unverified. Only
-      # possible if there was a previous release — on a first deploy there is
-      # nothing to go back to, so the link stays and the marker still fails the
-      # run. The workflow reports these two cases differently.
-      if [ -n "$previous" ] && [ -d "$previous" ]; then
-        ln -sfn "$previous" "$WEB_ROOT.incoming"
-        mv -Tf "$WEB_ROOT.incoming" "$WEB_ROOT"
-        systemctl reload nginx >>"$LOG" 2>&1 || true
-        echo "ROLLED_BACK=$previous"
-      fi
-      echo "NOT_SERVING $HEALTH_URL"
-      curl -sS -o /dev/null -w 'http_status=%{http_code}\n' "$HEALTH_URL" 2>&1 || true
-      tail -n 20 "$LOG" || true
-      exit 1
-    fi
-
-    # Keep a few releases back so a rollback is one symlink swap. Pruned only
-    # after the new one is verified, so a failed deploy never costs a rollback
-    # target. pre-cicd-* is excluded — that is the operator's pre-existing build
-    # and is not ours to reap.
+    # Keep a few releases back so a rollback is one symlink swap. pre-cicd-* is
+    # excluded — that is the operator's pre-existing build and is not ours to
+    # reap. Note this no longer waits on a verified release, so the retained set
+    # is simply the last KEEP_RELEASES deploys, working or not.
     find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -name '*-*' ! -name 'pre-cicd-*' \
          -printf '%T@\t%p\n' 2>/dev/null \
       | sort -rn | cut -f2- \

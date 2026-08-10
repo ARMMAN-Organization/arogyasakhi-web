@@ -287,19 +287,32 @@ jobs:
             exit 1
           fi
           sed -n 's/^MIGRATED_TO_RELEASES=/::warning::First deploy converted the web root to a releases+symlink layout. The directory that was there has been moved aside, not deleted: /p' remote.out
-          if grep -q '^NOT_SERVING' remote.out; then
-            url=$(sed -n 's/^NOT_SERVING //p' remote.out)
-            # deploy-dev.sh can only roll back if a previous release exists, so
-            # on a first deploy there is nothing to swap to and the box is left
-            # serving a build that failed verification. Reporting "rolled back"
-            # unconditionally would tell the operator the opposite of the truth
-            # in exactly the case where it matters most.
-            if grep -q '^ROLLED_BACK=' remote.out; then
-              echo "::error::nginx reloaded but $url did not serve this build. Rolled back to $(sed -n 's/^ROLLED_BACK=//p' remote.out) — the box is serving the previous release."
-            else
-              echo "::error::nginx reloaded but $url did not serve this build, and there was no previous release to roll back to. THE BOX IS SERVING AN UNVERIFIED BUILD at the release path logged above. Check nginx on the box before anything else."
-            fi
-            exit 1
-          fi
+          # NO POST-DEPLOY SMOKE TEST — REMOVED DELIBERATELY, NOT MISSING.
+          #
+          # The probe itself lived in tools/deploy-dev.sh (this repo, tracked) in
+          # its publish phase: it polled http://127.0.0.1/BUILD_INFO, swapped the
+          # symlink back to the previous release on failure, and emitted
+          # NOT_SERVING / ROLLED_BACK= for the checks that used to sit here.
+          # Both halves were removed together — see the matching comment in
+          # tools/deploy-dev.sh publish.
+          #
+          # What that costs, so nobody has to rediscover it: the run now goes
+          # green once the files are in place, the symlink is swapped and
+          # `nginx -t` passes. Nothing checks that a request actually reaches the
+          # new build. A misrouted server block, a wrong `root`, or a release dir
+          # nginx cannot read all deploy green.
+          #
+          # `nginx -t` (NGINX_CONFIG_INVALID above) is kept — it is a config
+          # syntax check, not a serving probe, and it is what stops a broken
+          # reload from taking the site down.
+          #
+          # Verify by hand after a deploy that matters:
+          #   curl -s http://127.0.0.1/BUILD_INFO   # expect sha=<the sha deployed>
+          # The `location = /BUILD_INFO` block in deploy/nginx/arogyasakhi-web.conf
+          # is retained for exactly this. It is localhost-only by design.
+          #
+          # To restore the gate, both halves have to come back: re-add the
+          # NOT_SERVING / ROLLED_BACK= emission in tools/deploy-dev.sh publish,
+          # and re-add the marker checks here.
           grep -q '^DEPLOYED' remote.out || { echo "::error::Deploy did not complete. Log on the box: $(sed -n 's/^LOG=//p' remote.out)"; exit 1; }
-          echo "Serving $(sed -n 's/^DEPLOYED //p' remote.out)"
+          echo "Serving $(sed -n 's/^DEPLOYED //p' remote.out) (not verified — post-deploy smoke test is disabled)"
