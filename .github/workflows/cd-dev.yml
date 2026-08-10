@@ -3,7 +3,7 @@ name: Deploy Arogya Sakhi Frontend
 on:
   push:
     branches:
-      - main
+      - main, develop
 
   workflow_dispatch:
 
