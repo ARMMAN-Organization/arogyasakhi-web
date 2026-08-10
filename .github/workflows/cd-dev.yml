@@ -289,9 +289,12 @@ jobs:
           sed -n 's/^MIGRATED_TO_RELEASES=/::warning::First deploy converted the web root to a releases+symlink layout. The directory that was there has been moved aside, not deleted: /p' remote.out
           # NO POST-DEPLOY SMOKE TEST — REMOVED DELIBERATELY, NOT MISSING.
           #
-          # This used to curl BUILD_INFO from the box after the reload and fail
-          # the run (auto-rolling-back where a previous release existed) if nginx
-          # was not serving the release just linked. Removed on request.
+          # The probe itself lived in tools/deploy-dev.sh (this repo, tracked) in
+          # its publish phase: it polled http://127.0.0.1/BUILD_INFO, swapped the
+          # symlink back to the previous release on failure, and emitted
+          # NOT_SERVING / ROLLED_BACK= for the checks that used to sit here.
+          # Both halves were removed together — see the matching comment in
+          # tools/deploy-dev.sh publish.
           #
           # What that costs, so nobody has to rediscover it: the run now goes
           # green once the files are in place, the symlink is swapped and
@@ -304,12 +307,12 @@ jobs:
           # reload from taking the site down.
           #
           # Verify by hand after a deploy that matters:
-          #   curl -s http://127.0.0.1/BUILD_INFO   # expect the SHA just deployed
+          #   curl -s http://127.0.0.1/BUILD_INFO   # expect sha=<the sha deployed>
           # The `location = /BUILD_INFO` block in deploy/nginx/arogyasakhi-web.conf
           # is retained for exactly this. It is localhost-only by design.
           #
-          # To restore the gate: have tools/deploy-dev.sh emit NOT_SERVING /
-          # ROLLED_BACK= again and re-add the marker checks here. See
-          # docs/DEPLOYMENT.md §2.
+          # To restore the gate, both halves have to come back: re-add the
+          # NOT_SERVING / ROLLED_BACK= emission in tools/deploy-dev.sh publish,
+          # and re-add the marker checks here.
           grep -q '^DEPLOYED' remote.out || { echo "::error::Deploy did not complete. Log on the box: $(sed -n 's/^LOG=//p' remote.out)"; exit 1; }
           echo "Serving $(sed -n 's/^DEPLOYED //p' remote.out) (not verified — post-deploy smoke test is disabled)"
