@@ -1,318 +1,48 @@
-name: CD Dev (SSM Run Command)
+name: Deploy Arogya Sakhi Frontend
 
-# Redeploys the dev box over `aws ssm send-command`. No inbound port, and no
-# long-lived AWS credentials: GitHub mints an OIDC token per run and exchanges it
-# for short-lived ones. Mirrors arogyasakhi-service/.github/workflows/cd-dev.yml —
-# same transport, same ssm_run helper, same OIDC role, same .env mechanism.
-#
-# WHY RUN COMMAND AND NOT AN SSH TUNNEL
-# The deploy role is permitted `ssm:SendCommand` only. Session Manager's SSH
-# tunnel (AWS-StartSSHSession) would have allowed plain rsync/scp with no inbound
-# port, but that permission has been declined TWICE by the client — once for the
-# backend (recorded in that workflow's header) and again when this pipeline was
-# built. Treat it as settled and do not re-request it.
-#
-# WHY THE BUILD RUNS ON THE BOX, NOT THE RUNNER
-# Run Command has no file copy. Its nine plugins include exactly one that moves
-# files, `aws:downloadContent`, and that is a *pull*. So a runner-built dist has
-# to be published somewhere the box can fetch from, which means either an S3
-# relay (needs s3:PutObject/s3:GetObject, not granted) or shipping build output
-# through a git branch. Building on the box removes the artifact entirely: there
-# is nothing to transfer, and this workflow keeps `contents: read`.
-#
-# Inlining a dist in the command payload the way .env is inlined below does not
-# scale, and this was measured rather than assumed: an .env body is ~1-3 KB, a
-# stripped dist is 407 KB base64, and the SSM document ceiling is 64 KB.
-#
-# THE COST, AND THE GUARD
-# The box sits near 81% RAM with the 16 backend services idle — the reason the
-# backend deploy is max-parallel:1. A Vite build there could trip the kernel OOM
-# killer, which chooses its victim by score and may well pick auth-service rather
-# than the build. tools/deploy-dev.sh therefore refuses to start below
-# BUILD_MIN_AVAIL_MB and caps the build heap at NODE_HEAP_MB, so the worst case is
-# a failed deploy rather than a backend service dying.
-#
-# .env HANDLING — DELIBERATE, NOT AN OVERSIGHT
-# Run Command has no file copy, so ENV_APP's body travels inside the command
-# document and is readable by any principal holding `ssm:GetCommandInvocation`,
-# and retained in SSM command history. The backend accepts this trade for real
-# database credentials. Here it is materially safer: every VITE_* value is
-# compiled into a static bundle that any browser can read, so the secret is only
-# a secret in transit. It is written with a heredoc redirect rather than as an
-# argument, so it never appears in `ps` on the box.
-#
-# WHERE THE LOGIC LIVES
-# tools/deploy-dev.sh, versioned in this repo and delivered to the box by the
-# `git reset --hard` below. This deliberately diverges from the backend, whose
-# copy is gitignored and hand-placed: that script has to survive a repo reset it
-# is itself performing, whereas this one is fetched fresh each run and so is
-# always the reviewed version that matches the workflow driving it.
-#
-# The runner never checks the repo out at all — it is a thin driver, exactly as
-# the backend's is.
-
-# No workflow_dispatch here on purpose: redeploy-dev.yml is the manual entry
-# point and calls this one. Declaring both would put two identical "Run workflow"
-# buttons in the Actions list with no way to tell them apart.
 on:
   push:
-    branches: [develop]
-  workflow_call:
+    branches:
+      - main, develop
 
-# id-token is what configure-aws-credentials exchanges for short-lived AWS
-# credentials via OIDC federation — no access keys are stored anywhere. Mirrored
-# in redeploy-dev.yml, because a reusable workflow cannot grant itself more token
-# permission than its caller.
+  workflow_dispatch:
+
 permissions:
-  contents: read
   id-token: write
-
-# Never cancel a deploy in flight, and never run two at once: both would race
-# `git reset --hard` in the same directory, and then the symlink swap in /var/www.
-concurrency:
-  group: cd-dev-web
-  cancel-in-progress: false
-
-env:
-  DEV_WORKSPACE: ${{ vars.DEV_WEB_WORKSPACE || '/opt/dev/armaan/arogyasakhi-web' }}
-  WEB_ROOT: ${{ vars.DEV_WEB_ROOT || '/var/www/armman/app' }}
-  DEV_USER: ${{ secrets.DEV_USER || 'ssm-user' }}
-  # PROVISIONAL — set from the box's actual `free -m`. Refuse to build below this
-  # much MemAvailable, so a loaded box fails the deploy instead of OOM-killing a
-  # backend service.
-  BUILD_MIN_AVAIL_MB: ${{ vars.BUILD_MIN_AVAIL_MB || '1536' }}
-  # PROVISIONAL — V8 heap ceiling for the build. Below the guard above, so the
-  # build hits its own limit and exits cleanly rather than reaching the point
-  # where the kernel starts choosing processes to kill.
-  NODE_HEAP_MB: ${{ vars.NODE_HEAP_MB || '1024' }}
-  # Run Command is asynchronous, so completion is polled. `aws ssm wait
-  # command-executed` is deliberately not used: it gives up after roughly 100s
-  # (5s x 20 attempts), and a cold `npm ci` on the box alone exceeds that.
-  POLL_ATTEMPTS: 240
-  POLL_DELAY: 5
-  # Execution budget on the box, passed to the document — comfortably above a
-  # cold npm ci plus a full build.
-  SSM_EXECUTION_TIMEOUT: 3600
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          aws-region: ap-south-1
 
-      - name: Build on the box and publish
-        env:
-          DEV_INSTANCE_ID: ${{ vars.DEV_WEB_INSTANCE_ID || vars.DEV_INSTANCE_ID }}
-          ENV_BODY: ${{ secrets.ENV_APP }}
-          SOURCE_SHA: ${{ github.sha }}
-          REF_NAME: ${{ github.ref_name }}
+      - name: Deploy via SSM
         run: |
-          set -euo pipefail
-          [ -n "${DEV_INSTANCE_ID:-}" ] || { echo "::error::Neither DEV_WEB_INSTANCE_ID nor DEV_INSTANCE_ID is set."; exit 1; }
+          set -e
 
-          # Send a script file as the document's `commands`, poll to completion,
-          # then write stdout to $3. Built with jq --rawfile rather than shell
-          # interpolation so any content survives, quotes included. Output is not
-          # piped, because a pipeline's exit status would mask a failed command.
-          #
-          # Lifted verbatim from the backend workflow so the two stay diffable.
-          ssm_run() {
-            local script_file=$1 label=$2 out=$3 cid status=Pending
-            jq -n --rawfile s "$script_file" --arg t "$SSM_EXECUTION_TIMEOUT" \
-              '{commands: ($s | rtrimstr("\n") | split("\n")), executionTimeout: [$t]}' > params.json
-            cid=$(aws ssm send-command \
-                  --instance-ids "$DEV_INSTANCE_ID" \
-                  --document-name AWS-RunShellScript \
-                  --comment "cd-dev-web ${label:0:80}" \
-                  --parameters file://params.json \
-                  --query Command.CommandId --output text)
-            echo "SSM command id: $cid"
-            for _ in $(seq 1 "$POLL_ATTEMPTS"); do
-              status=$(aws ssm get-command-invocation --command-id "$cid" \
-                       --instance-id "$DEV_INSTANCE_ID" --query Status --output text 2>/dev/null || echo Pending)
-              case "$status" in Success|Failed|Cancelled|TimedOut) break ;; esac
-              sleep "$POLL_DELAY"
-            done
-            aws ssm get-command-invocation --command-id "$cid" --instance-id "$DEV_INSTANCE_ID" \
-              --query StandardErrorContent --output text || true
-            aws ssm get-command-invocation --command-id "$cid" --instance-id "$DEV_INSTANCE_ID" \
-              --query StandardOutputContent --output text > "$out"
-            cat "$out"
-            [ "$status" = Success ] || { echo "::error::SSM command $cid ended as $status ($label)."; return 1; }
-          }
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "i-0816c6a79da65e53b" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["sudo /opt/dev/armaan/dev-deploy-frontend.sh"]' \
+            --query "Command.CommandId" \
+            --output text)
 
-          # A quoted heredoc delimiter stops anything inside the body being
-          # expanded, so $(...), backticks and quotes all survive verbatim. The one
-          # thing that would break out is a body line exactly matching it:
-          if printf '%s' "${ENV_BODY:-}" | grep -qx 'AROGYA_ENV_EOF'; then
-            echo "::error::Secret ENV_APP contains a line reading exactly AROGYA_ENV_EOF, which would terminate the heredoc early and truncate the .env. Rename or remove that line."
-            exit 1
-          fi
-          if [ -z "${ENV_BODY:-}" ]; then
-            echo "::warning::Secret ENV_APP is not set — building against the .env already on the box. If there isn't one, the build fails with NO_ENV: config/env.ts throws when VITE_API_BASE_URL is missing."
-          fi
+          echo "SSM Command ID: $COMMAND_ID"
 
-          # THREE PHASES, TWO USERS. Run Command executes as root in a non-login
-          # shell; the repo is ssm-user-owned, and root git operations in it trip
-          # "dubious ownership" and leave root-owned objects behind. The box also
-          # resolves node through ssm-user's profile. So git, nvm, npm and the
-          # build all run via `runuser -l ssm-user`; only the .env write (which
-          # then chowns) and the /var/www swap stay root.
-          #
-          # The reset runs here rather than inside deploy-dev.sh: the script on
-          # disk is the previous version until the reset lands, so it has to run
-          # afterwards. bash reads the file after the reset completes, so the new
-          # copy is what executes.
-          #
-          # Values are prefixed with %q and bodies are quoted heredocs, so nothing
-          # expands on the runner by accident and no quoting can break.
-          # `set -eu`, not `-euo pipefail`: AWS-RunShellScript executes the
-          # commands with /bin/sh, which on Ubuntu is dash — it rejects
-          # `-o pipefail` outright ("Illegal option"), failing on line 1. The inner
-          # scripts run under `bash -s` and keep full pipefail.
-          {
-            printf 'set -eu\n'
+          echo "Waiting for deployment..."
 
-            # --- 1. sync the checkout (as ssm-user) ---
-            printf "runuser -l %q -c 'bash -s' <<'SYNC'\n" "$DEV_USER"
-            printf 'set -euo pipefail\n'
-            printf 'WORKSPACE=%q\n' "$DEV_WORKSPACE"
-            printf 'REF_NAME=%q\n'  "$REF_NAME"
-            cat <<'SYNC_BODY'
-          if [ ! -d "$WORKSPACE/.git" ]; then
-            echo "MISSING_WORKSPACE"
-            exit 1
-          fi
-          cd "$WORKSPACE"
-          git fetch origin "$REF_NAME"
-          # No `git clean`: the box legitimately holds untracked files here —
-          # .env, node_modules, and the release staging dir.
-          git reset --hard FETCH_HEAD
-          if [ ! -f tools/deploy-dev.sh ]; then
-            echo "MISSING_DEPLOY_SCRIPT"
-            exit 1
-          fi
-          SYNC_BODY
-            printf 'SYNC\n'
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-0816c6a79da65e53b"
 
-            # --- 2. write .env (as root, then chown) ---
-            # Written as root rather than passed through `runuser -c`, where the
-            # body would show up in `ps` for every user on the box. .env is
-            # gitignored, so the reset above never touches it.
-            if [ -n "${ENV_BODY:-}" ]; then
-              printf 'umask 077\n'
-              printf 'cd %q\n' "$DEV_WORKSPACE"
-              printf "cat > .env <<'AROGYA_ENV_EOF'\n"
-              printf '%s\n' "$ENV_BODY"
-              printf 'AROGYA_ENV_EOF\n'
-              printf 'chown %q:%q .env\n' "$DEV_USER" "$DEV_USER"
-              printf 'chmod 600 .env\n'
-              printf 'echo ENV_WRITTEN\n'
-            fi
+          echo "Deployment result:"
 
-            # --- 3. build (as ssm-user) ---
-            printf "runuser -l %q -c 'bash -s' <<'BUILD'\n" "$DEV_USER"
-            printf 'set -euo pipefail\n'
-            printf 'WORKSPACE=%q\n'   "$DEV_WORKSPACE"
-            printf 'SOURCE_SHA=%q\n'  "$SOURCE_SHA"
-            printf 'MIN_AVAIL=%q\n'   "$BUILD_MIN_AVAIL_MB"
-            printf 'HEAP=%q\n'        "$NODE_HEAP_MB"
-            cat <<'BUILD_BODY'
-          cd "$WORKSPACE"
-          DEV_WORKSPACE="$WORKSPACE" SOURCE_SHA="$SOURCE_SHA" \
-          BUILD_MIN_AVAIL_MB="$MIN_AVAIL" NODE_HEAP_MB="$HEAP" \
-            bash tools/deploy-dev.sh build
-          BUILD_BODY
-            printf 'BUILD\n'
-
-            # --- 4. swap into /var/www and reload nginx (as root) ---
-            printf 'cd %q\n' "$DEV_WORKSPACE"
-            printf 'DEV_WORKSPACE=%q WEB_ROOT=%q DEV_USER=%q SOURCE_SHA=%q bash tools/deploy-dev.sh publish\n' \
-              "$DEV_WORKSPACE" "$WEB_ROOT" "$DEV_USER" "$SOURCE_SHA"
-          } > script.sh
-
-          # Markers are checked below, so a non-zero status here is expected for
-          # the handled cases and must not abort the step first.
-          ssm_run script.sh "deploy $SOURCE_SHA" remote.out || true
-
-          if grep -q '^MISSING_WORKSPACE' remote.out; then
-            echo "::error::$DEV_WORKSPACE is not a git checkout on the box. It needs a one-time clone as $DEV_USER — see docs/DEPLOYMENT.md."
-            exit 1
-          fi
-          if grep -q '^MISSING_DEPLOY_SCRIPT' remote.out; then
-            echo "::error::tools/deploy-dev.sh is missing at $DEV_WORKSPACE after the reset. The checkout is on a branch that predates it — check out $REF_NAME on the box."
-            exit 1
-          fi
-          if grep -q '^ENV_WRITTEN' remote.out; then
-            echo "Wrote $DEV_WORKSPACE/.env from ENV_APP"
-          fi
-          if grep -q '^NO_ENV' remote.out; then
-            echo "::error::No .env at $DEV_WORKSPACE and no ENV_APP secret set. Vite inlines VITE_API_BASE_URL at build time and config/env.ts throws without it. Set ENV_APP to at least: VITE_API_BASE_URL=/api/v1"
-            exit 1
-          fi
-          if grep -q '^MISSING_NVM' remote.out; then
-            echo "::error::nvm is not installed for $DEV_USER on the box. See docs/DEPLOYMENT.md §1.3 — the build needs Node 20.11 and the box's default is Node 24."
-            exit 1
-          fi
-          if grep -q '^MISSING_NODE_20' remote.out; then
-            echo "::error::Node 20.11 is not installed for $DEV_USER: $(sed -n 's/^MISSING_NODE_20 //p' remote.out). Run 'nvm install 20.11.0' as $DEV_USER. Deliberately not falling back to the box's Node 24 — package.json, the Dockerfile and CI all pin 20.11."
-            exit 1
-          fi
-          if grep -q '^INSUFFICIENT_MEMORY' remote.out; then
-            echo "::error::Refused to build: $(sed -n 's/^INSUFFICIENT_MEMORY //p' remote.out). The box runs 16 backend services and starting a build here risks the OOM killer taking one of them out instead of the build. Free memory and re-run, or lower BUILD_MIN_AVAIL_MB if this threshold is wrong for your box — see docs/DEPLOYMENT.md §5, which has the measured peaks."
-            exit 1
-          fi
-          if grep -q '^BUILD_OOM' remote.out; then
-            echo "::error::The build exhausted its V8 heap ($(sed -n 's/^BUILD_OOM //p' remote.out)). This is a cap, not a crash: raise the NODE_HEAP_MB variable. Measured peak for this tree was 721MB, so tsc has likely grown past the current ceiling."
-            exit 1
-          fi
-          if grep -q '^BUILD_FAILED' remote.out; then
-            echo "::error::npm run build failed on the box — see the log tail above. Not a memory problem; the heap-exhaustion case reports separately as BUILD_OOM."
-            exit 1
-          fi
-          if grep -q '^DEFAULT_NODE_CHANGED' remote.out; then
-            echo "::error::This deploy altered the box's DEFAULT node version ($(sed -n 's/^DEFAULT_NODE_CHANGED //p' remote.out)). The 16 arogyasakhi-service processes resolve that default and would come back on the wrong Node at their next PM2 restart. Something in tools/deploy-dev.sh is calling 'nvm alias default' — it must only ever call 'nvm use', which is scoped to the build shell. Fix before deploying again."
-            exit 1
-          fi
-          if grep -q '^INSTALL_FAILED' remote.out; then
-            echo "::error::npm ci failed on the box — see the log tail above."
-            exit 1
-          fi
-          if grep -q '^NGINX_CONFIG_INVALID' remote.out; then
-            echo "::error::nginx -t failed, so the reload was skipped and the previous release is still being served. The new files ARE in place at the release dir — fix the nginx config on the box, then re-run. Log tail is above."
-            exit 1
-          fi
-          sed -n 's/^MIGRATED_TO_RELEASES=/::warning::First deploy converted the web root to a releases+symlink layout. The directory that was there has been moved aside, not deleted: /p' remote.out
-          # NO POST-DEPLOY SMOKE TEST — REMOVED DELIBERATELY, NOT MISSING.
-          #
-          # The probe itself lived in tools/deploy-dev.sh (this repo, tracked) in
-          # its publish phase: it polled http://127.0.0.1/BUILD_INFO, swapped the
-          # symlink back to the previous release on failure, and emitted
-          # NOT_SERVING / ROLLED_BACK= for the checks that used to sit here.
-          # Both halves were removed together — see the matching comment in
-          # tools/deploy-dev.sh publish.
-          #
-          # What that costs, so nobody has to rediscover it: the run now goes
-          # green once the files are in place, the symlink is swapped and
-          # `nginx -t` passes. Nothing checks that a request actually reaches the
-          # new build. A misrouted server block, a wrong `root`, or a release dir
-          # nginx cannot read all deploy green.
-          #
-          # `nginx -t` (NGINX_CONFIG_INVALID above) is kept — it is a config
-          # syntax check, not a serving probe, and it is what stops a broken
-          # reload from taking the site down.
-          #
-          # Verify by hand after a deploy that matters:
-          #   curl -s http://127.0.0.1/BUILD_INFO   # expect sha=<the sha deployed>
-          # The `location = /BUILD_INFO` block in deploy/nginx/arogyasakhi-web.conf
-          # is retained for exactly this. It is localhost-only by design.
-          #
-          # To restore the gate, both halves have to come back: re-add the
-          # NOT_SERVING / ROLLED_BACK= emission in tools/deploy-dev.sh publish,
-          # and re-add the marker checks here.
-          grep -q '^DEPLOYED' remote.out || { echo "::error::Deploy did not complete. Log on the box: $(sed -n 's/^LOG=//p' remote.out)"; exit 1; }
-          echo "Serving $(sed -n 's/^DEPLOYED //p' remote.out) (not verified — post-deploy smoke test is disabled)"
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-0816c6a79da65e53b"
