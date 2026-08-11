@@ -3,8 +3,8 @@ name: Deploy Arogya Sakhi Frontend
 on:
   push:
     branches:
-      - main, develop
-
+      - main
+      - develop
   workflow_dispatch:
 
 permissions:
